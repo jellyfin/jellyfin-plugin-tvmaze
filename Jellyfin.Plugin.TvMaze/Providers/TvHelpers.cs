@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
     /// Search helpers.
     /// </summary>
-    public static class Helpers
+    public static class TvHelpers
     {
         internal static int? GetTvMazeId(Dictionary<string, string> providerIds)
         {
@@ -26,7 +25,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// </summary>
         /// <param name="input">Input string.</param>
         /// <returns>Stripped input.</returns>
-        internal static string StripHtml(string input)
+        internal static string GetStrippedHtml(string input)
         {
             return input
                 .Replace("<br>", Environment.NewLine, StringComparison.OrdinalIgnoreCase)

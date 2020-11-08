@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -19,14 +21,17 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     {
         private readonly IHttpClient _httpClient;
         private readonly ITvMazeClient _tvMazeClient;
+        private readonly ILogger<TvMazeSeasonImageProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeasonImageProvider"/> class.
         /// </summary>
         /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
-        public TvMazeSeasonImageProvider(IHttpClient httpClient)
+        /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonImageProvider}"/> interface.</param>
+        public TvMazeSeasonImageProvider(IHttpClient httpClient, ILogger<TvMazeSeasonImageProvider> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
         }
@@ -49,21 +54,31 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <inheritdoc />
         public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
-            var season = (Season)item;
-            var series = season.Series;
-
-            if (series == null)
+            try
             {
-                // Invalid link.
+                var season = (Season)item;
+                var series = season.Series;
+
+                if (series == null)
+                {
+                    // Invalid link.
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
+
+                if (!season.IndexNumber.HasValue)
+                {
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
+
+                var imageResults = await GetSeasonImagesInternal(series, season.IndexNumber.Value).ConfigureAwait(false);
+                _logger.LogInformation("[GetImages] Images found for {name}: {@images}", item.Name, imageResults);
+                return imageResults;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "[GetImages]");
                 return Enumerable.Empty<RemoteImageInfo>();
             }
-
-            if (!season.IndexNumber.HasValue)
-            {
-                return Enumerable.Empty<RemoteImageInfo>();
-            }
-
-            return await GetSeasonImagesInternal(series, season.IndexNumber.Value).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -78,7 +93,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
         private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(IHasProviderIds series, int seasonNumber)
         {
-            var tvMazeId = Helpers.GetTvMazeId(series.ProviderIds);
+            var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
             if (tvMazeId == null)
             {
                 // Requires series tv maze id.

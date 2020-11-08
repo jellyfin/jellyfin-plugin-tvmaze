@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -18,15 +20,18 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     public class TvMazeEpisodeImageProvider : IRemoteImageProvider
     {
         private readonly IHttpClient _httpClient;
+        private readonly ILogger<TvMazeEpisodeImageProvider> _logger;
         private readonly ITvMazeClient _tvMazeClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeImageProvider"/> class.
         /// </summary>
         /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
-        public TvMazeEpisodeImageProvider(IHttpClient httpClient)
+        /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeImageProvider}"/>.</param>
+        public TvMazeEpisodeImageProvider(IHttpClient httpClient, ILogger<TvMazeEpisodeImageProvider> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
             _tvMazeClient = new TvMazeClient();
         }
 
@@ -48,46 +53,56 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <inheritdoc />
         public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
-            var episode = (Episode)item;
-            var series = episode.Series;
-            if (series == null)
+            try
             {
-                // Episode or series is null.
-                return Enumerable.Empty<RemoteImageInfo>();
-            }
-
-            var tvMazeId = Helpers.GetTvMazeId(episode.Series.ProviderIds);
-            if (tvMazeId == null)
-            {
-                // Requires series tv maze id.
-                return Enumerable.Empty<RemoteImageInfo>();
-            }
-
-            if (episode.IndexNumber == null || episode.ParentIndexNumber == null)
-            {
-                // Missing episode or season number.
-                return Enumerable.Empty<RemoteImageInfo>();
-            }
-
-            var tvMazeEpisode = await _tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, episode.ParentIndexNumber.Value, episode.IndexNumber.Value).ConfigureAwait(false);
-            if (tvMazeEpisode == null)
-            {
-                return Enumerable.Empty<RemoteImageInfo>();
-            }
-
-            var imageResults = new List<RemoteImageInfo>();
-            if (tvMazeEpisode.Image?.Original != null)
-            {
-                imageResults.Add(new RemoteImageInfo
+                _logger.LogDebug("[GetImages] {name}", item.Name);
+                var episode = (Episode)item;
+                var series = episode.Series;
+                if (series == null)
                 {
-                    Url = tvMazeEpisode.Image.Original,
-                    ProviderName = TvMazePlugin.ProviderName,
-                    Language = "en",
-                    Type = ImageType.Primary
-                });
-            }
+                    // Episode or series is null.
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
 
-            return imageResults;
+                var tvMazeId = TvHelpers.GetTvMazeId(episode.Series.ProviderIds);
+                if (tvMazeId == null)
+                {
+                    // Requires series tv maze id.
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
+
+                if (episode.IndexNumber == null || episode.ParentIndexNumber == null)
+                {
+                    // Missing episode or season number.
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
+
+                var tvMazeEpisode = await _tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, episode.ParentIndexNumber.Value, episode.IndexNumber.Value).ConfigureAwait(false);
+                if (tvMazeEpisode == null)
+                {
+                    return Enumerable.Empty<RemoteImageInfo>();
+                }
+
+                var imageResults = new List<RemoteImageInfo>();
+                if (tvMazeEpisode.Image?.Original != null)
+                {
+                    imageResults.Add(new RemoteImageInfo
+                    {
+                        Url = tvMazeEpisode.Image.Original,
+                        ProviderName = TvMazePlugin.ProviderName,
+                        Language = "en",
+                        Type = ImageType.Primary
+                    });
+                }
+
+                _logger.LogInformation("[GetImages] Images found for {name}: {@images}", item.Name, imageResults);
+                return imageResults;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "[GetImages]");
+                return Enumerable.Empty<RemoteImageInfo>();
+            }
         }
 
         /// <inheritdoc />

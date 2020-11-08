@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -8,6 +9,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -19,16 +21,19 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     {
         private readonly ITvMazeClient _tvMazeClient;
         private readonly IHttpClient _httpClient;
+        private readonly ILogger<TvMazeEpisodeProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeProvider"/> class.
         /// </summary>
         /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
-        public TvMazeEpisodeProvider(IHttpClient httpClient)
+        /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeProvider}"/>.</param>
+        public TvMazeEpisodeProvider(IHttpClient httpClient, ILogger<TvMazeEpisodeProvider> logger)
         {
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -37,46 +42,65 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <inheritdoc />
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo searchInfo, CancellationToken cancellationToken)
         {
-            var results = new List<RemoteSearchResult>();
-
-            var tvMazeId = Helpers.GetTvMazeId(searchInfo.SeriesProviderIds);
-            if (!tvMazeId.HasValue)
+            try
             {
-                // Requires a tv maze id.
+                _logger.LogDebug("[GetSearchResults] Starting for {name} {seasonNumber}x{episodeNumber}", searchInfo.Name, searchInfo.ParentIndexNumber, searchInfo.IndexNumber);
+                var results = new List<RemoteSearchResult>();
+
+                var tvMazeId = TvHelpers.GetTvMazeId(searchInfo.SeriesProviderIds);
+                if (!tvMazeId.HasValue)
+                {
+                    // Requires a tv maze id.
+                    return results;
+                }
+
+                var episode = await GetMetadataInternal(searchInfo).ConfigureAwait(false);
+                if (episode != null)
+                {
+                    results.Add(new RemoteSearchResult
+                    {
+                        IndexNumber = episode.IndexNumber,
+                        Name = episode.Name,
+                        ParentIndexNumber = episode.ParentIndexNumber,
+                        PremiereDate = episode.PremiereDate,
+                        ProductionYear = episode.ProductionYear,
+                        ProviderIds = episode.ProviderIds,
+                        SearchProviderName = Name,
+                        IndexNumberEnd = episode.IndexNumberEnd
+                    });
+                }
+
+                _logger.LogDebug("[GetSearchResults] Results for {name}: {@episode}", searchInfo.Name, results);
                 return results;
             }
-
-            var episode = await GetMetadataInternal(searchInfo).ConfigureAwait(false);
-            if (episode != null)
+            catch (Exception e)
             {
-                results.Add(new RemoteSearchResult
-                {
-                    IndexNumber = episode.IndexNumber,
-                    Name = episode.Name,
-                    ParentIndexNumber = episode.ParentIndexNumber,
-                    PremiereDate = episode.PremiereDate,
-                    ProductionYear = episode.ProductionYear,
-                    ProviderIds = episode.ProviderIds,
-                    SearchProviderName = Name,
-                    IndexNumberEnd = episode.IndexNumberEnd
-                });
+                _logger.LogWarning(e, "[GetSearchResults]");
+                return Enumerable.Empty<RemoteSearchResult>();
             }
-
-            return results;
         }
 
         /// <inheritdoc />
         public async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
-            var episode = await GetMetadataInternal(info).ConfigureAwait(false);
-            if (episode != null)
+            try
             {
-                result.Item = episode;
-                result.HasMetadata = true;
-            }
+                _logger.LogDebug("[GetMetadata] Starting for {name}", info.Name);
+                var episode = await GetMetadataInternal(info).ConfigureAwait(false);
+                if (episode != null)
+                {
+                    result.Item = episode;
+                    result.HasMetadata = true;
+                }
 
-            return result;
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "[GetMetadata]");
+                return result;
+            }
         }
 
         /// <inheritdoc />
@@ -91,7 +115,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
         private async Task<Episode?> GetMetadataInternal(EpisodeInfo info)
         {
-            var tvMazeId = Helpers.GetTvMazeId(info.SeriesProviderIds);
+            var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
             if (!tvMazeId.HasValue)
             {
                 // Requires a tv maze id.
@@ -128,7 +152,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 episode.RunTimeTicks = TimeSpan.FromTicks(tvMazeEpisode.Runtime.Value).Ticks;
             }
 
-            episode.Overview = Helpers.StripHtml(tvMazeEpisode.Summary);
+            episode.Overview = TvHelpers.GetStrippedHtml(tvMazeEpisode.Summary);
             episode.SetProviderId(TvMazePlugin.ProviderId, tvMazeEpisode.Id.ToString(CultureInfo.InvariantCulture));
 
             return episode;

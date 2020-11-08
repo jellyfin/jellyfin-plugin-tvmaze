@@ -8,6 +8,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -19,16 +20,19 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     {
         private readonly ITvMazeClient _tvMazeClient;
         private readonly IHttpClient _httpClient;
+        private readonly ILogger<TvMazeSeasonProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeasonProvider"/> class.
         /// </summary>
         /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
-        public TvMazeSeasonProvider(IHttpClient httpClient)
+        /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonProvider}"/>.</param>
+        public TvMazeSeasonProvider(IHttpClient httpClient, ILogger<TvMazeSeasonProvider> logger)
         {
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -38,21 +42,29 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeasonInfo searchInfo, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-            var season = await GetSeasonInternal(searchInfo).ConfigureAwait(false);
-            if (season != null)
+            try
             {
-                results.Add(new RemoteSearchResult
+                var season = await GetSeasonInternal(searchInfo).ConfigureAwait(false);
+                if (season != null)
                 {
-                    IndexNumber = season.IndexNumber,
-                    Name = season.Name,
-                    PremiereDate = season.PremiereDate,
-                    ProductionYear = season.ProductionYear,
-                    ProviderIds = season.ProviderIds,
-                    SearchProviderName = Name
-                });
-            }
+                    results.Add(new RemoteSearchResult
+                    {
+                        IndexNumber = season.IndexNumber,
+                        Name = season.Name,
+                        PremiereDate = season.PremiereDate,
+                        ProductionYear = season.ProductionYear,
+                        ProviderIds = season.ProviderIds,
+                        SearchProviderName = Name
+                    });
+                }
 
-            return results;
+                return results;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "[GetSearchResults]");
+                return results;
+            }
         }
 
         /// <inheritdoc />
@@ -60,20 +72,28 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             var result = new MetadataResult<Season>();
 
-            if (!info.IndexNumber.HasValue)
+            try
             {
-                // Requires season number.
+                if (!info.IndexNumber.HasValue)
+                {
+                    // Requires season number.
+                    return result;
+                }
+
+                var season = await GetSeasonInternal(info).ConfigureAwait(false);
+                if (season != null)
+                {
+                    result.Item = season;
+                    result.HasMetadata = true;
+                }
+
                 return result;
             }
-
-            var season = await GetSeasonInternal(info).ConfigureAwait(false);
-            if (season != null)
+            catch (Exception e)
             {
-                result.Item = season;
-                result.HasMetadata = true;
+                _logger.LogWarning(e, "[GetMetadata]");
+                return result;
             }
-
-            return result;
         }
 
         /// <inheritdoc />
@@ -88,7 +108,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
         private async Task<Season?> GetSeasonInternal(SeasonInfo info)
         {
-            var tvMazeId = Helpers.GetTvMazeId(info.SeriesProviderIds);
+            var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
             if (tvMazeId == null)
             {
                 // Requires series tv maze id.
@@ -118,7 +138,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     }
 
                     season.SetProviderId(TvMazePlugin.ProviderId, tvMazeSeason.Id.ToString(CultureInfo.InvariantCulture));
-
                     return season;
                 }
             }
