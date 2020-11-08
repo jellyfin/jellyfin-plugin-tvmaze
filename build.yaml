@@ -1,0 +1,15 @@
+---
+name: "TV Maze"
+guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
+version: "1.0.0.0"
+targetAbi: "10.6.0.0"
+owner: "jellyfin"
+overview: "Get TV metadata from TV Maze"
+description: >
+  Get TV metadata from TV Maze
+category: "Metadata"
+artifacts:
+- "Jellyfin.Plugin.TvMaze.dll"
+- "TvMaze.Api.Client.dll"
+changelog: >
+  Initial release.

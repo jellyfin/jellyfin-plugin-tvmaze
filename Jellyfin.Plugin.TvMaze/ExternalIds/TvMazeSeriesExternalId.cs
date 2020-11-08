@@ -1,0 +1,29 @@
+﻿using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Providers;
+
+namespace Jellyfin.Plugin.TvMaze.ExternalIds
+{
+    /// <inheritdoc />
+    public class TvMazeSeriesExternalId : IExternalId
+    {
+        /// <inheritdoc />
+        public string ProviderName => "TV Maze Series";
+
+        /// <inheritdoc />
+        public string Key => TvMazePlugin.ProviderId;
+
+        /// <inheritdoc />
+        public ExternalIdMediaType? Type => ExternalIdMediaType.Series;
+
+        /// <inheritdoc />
+        public string UrlFormatString => "http://www.tvmaze.com/shows/{0}";
+
+        /// <inheritdoc />
+        public bool Supports(IHasProviderIds item)
+        {
+            return item is Series;
+        }
+    }
+}
