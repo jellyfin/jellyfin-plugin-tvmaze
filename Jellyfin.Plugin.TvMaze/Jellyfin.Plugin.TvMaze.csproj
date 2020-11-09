@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
-        <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <FileVersion>2.0.0.0</FileVersion>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <Nullable>enable</Nullable>
@@ -17,7 +17,6 @@
         <PackageReference Include="Jellyfin.Controller" Version="10.6.0" />
         <PackageReference Include="Jellyfin.Data" Version="10.6.0" />
         <PackageReference Include="Jellyfin.Model" Version="10.6.0" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.9" />
         <PackageReference Include="TvMaze.Api.Client" Version="0.0.21" />
     </ItemGroup>
 
