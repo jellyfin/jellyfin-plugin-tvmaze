@@ -25,9 +25,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// </summary>
         /// <param name="input">Input string.</param>
         /// <returns>Stripped input.</returns>
-        internal static string GetStrippedHtml(string input)
+        internal static string? GetStrippedHtml(string? input)
         {
-            return input
+            return input?
                 .Replace("<br>", Environment.NewLine, StringComparison.OrdinalIgnoreCase)
                 .Replace("<p>", string.Empty, StringComparison.OrdinalIgnoreCase)
                 .Replace("</p>", string.Empty, StringComparison.OrdinalIgnoreCase)

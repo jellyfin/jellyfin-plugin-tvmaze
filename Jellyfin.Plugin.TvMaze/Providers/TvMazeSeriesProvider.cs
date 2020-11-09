@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
@@ -95,15 +96,41 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var result = new MetadataResult<Series>();
 
                 var tvMazeId = TvHelpers.GetTvMazeId(info.ProviderIds);
-                Show? tvMazeShow;
+                Show? tvMazeShow = null;
                 if (tvMazeId.HasValue)
                 {
                     // Search by tv maze id.
                     tvMazeShow = await _tvMazeClient.Shows.GetShowMainInformation(tvMazeId.Value).ConfigureAwait(false);
                 }
-                else
+
+                if (tvMazeShow == null
+                    && info.ProviderIds.TryGetValue(MetadataProvider.Imdb.ToString(), out var imdbId)
+                    && !string.IsNullOrEmpty(imdbId))
                 {
-                    // Search by name.
+                    // Lookup by imdb id.
+                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByImdbId(imdbId).ConfigureAwait(false);
+                }
+
+                if (tvMazeShow == null
+                    && info.ProviderIds.TryGetValue(MetadataProvider.TvRage.ToString(), out var tvRageId)
+                    && !string.IsNullOrEmpty(tvRageId))
+                {
+                    // Lookup by tv rage id.
+                    var id = Convert.ToInt32(tvRageId, CultureInfo.InvariantCulture);
+                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                }
+
+                if (tvMazeShow == null
+                    && info.ProviderIds.TryGetValue(MetadataProvider.Tvdb.ToString(), out var tvdbId)
+                    && !string.IsNullOrEmpty(tvdbId))
+                {
+                    var id = Convert.ToInt32(tvdbId, CultureInfo.InvariantCulture);
+                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                }
+
+                if (tvMazeShow == null)
+                {
+                    // Series still not found, search by name.
                     var parsedName = _libraryManager.ParseName(info.Name);
                     _logger.LogDebug("[GetMetadata] No TV Maze Id, searching by parsed name: {@name}", parsedName);
                     tvMazeShow = await GetIdentifyShow(parsedName).ConfigureAwait(false);
@@ -112,6 +139,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 if (tvMazeShow == null)
                 {
                     // Invalid tv maze id.
+                    _logger.LogDebug("[GetMetadata] No TV Maze result found for {name}", info.Name);
                     return result;
                 }
 
@@ -158,6 +186,21 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 series.Overview = TvHelpers.GetStrippedHtml(tvMazeShow.Summary);
                 series.HomePageUrl = tvMazeShow.Url;
                 SetProviderIds(tvMazeShow, series);
+
+                // Set cast.
+                var castMembers = await _tvMazeClient.Shows.GetShowCastAsync(tvMazeShow.Id).ConfigureAwait(false);
+                foreach (var castMember in castMembers)
+                {
+                    var personInfo = new PersonInfo();
+                    personInfo.SetProviderId(TvMazePlugin.ProviderId, castMember.Person.Id.ToString(CultureInfo.InvariantCulture));
+                    personInfo.Name = castMember.Person.Name;
+                    personInfo.Role = castMember.Character.Name;
+                    personInfo.Type = PersonType.Actor;
+                    personInfo.ImageUrl = castMember.Person.Image?.Original
+                                          ?? castMember.Person.Image?.Medium;
+
+                    result.AddPerson(personInfo);
+                }
 
                 result.Item = series;
                 result.HasMetadata = true;
