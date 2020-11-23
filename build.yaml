@@ -1,7 +1,7 @@
 ---
 name: "TV Maze"
 guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
-version: "3.0.0.0"
+version: "4.0.0.0"
 targetAbi: "10.6.0.0"
 owner: "jellyfin"
 overview: "Get TV metadata from TV Maze"
@@ -12,4 +12,4 @@ artifacts:
 - "Jellyfin.Plugin.TvMaze.dll"
 - "TvMaze.Api.Client.dll"
 changelog: >
-  Remove unused dependencies 
+  Get additional image types
