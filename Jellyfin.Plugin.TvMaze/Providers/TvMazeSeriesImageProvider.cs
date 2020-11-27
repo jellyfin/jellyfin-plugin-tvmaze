@@ -22,7 +22,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     public class TvMazeSeriesImageProvider : IRemoteImageProvider
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ITvMazeClient _tvMazeClient;
         private readonly ILogger<TvMazeSeriesImageProvider> _logger;
 
         /// <summary>
@@ -34,7 +33,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
-            _tvMazeClient = new TvMazeClient();
         }
 
         /// <inheritdoc />
@@ -69,7 +67,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                var images = await _tvMazeClient.Shows.GetShowImagesAsync(tvMazeId.Value).ConfigureAwait(false);
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var images = await tvMazeClient.Shows.GetShowImagesAsync(tvMazeId.Value).ConfigureAwait(false);
                 if (images == null)
                 {
                     _logger.LogDebug("[GetImages] No images found.");

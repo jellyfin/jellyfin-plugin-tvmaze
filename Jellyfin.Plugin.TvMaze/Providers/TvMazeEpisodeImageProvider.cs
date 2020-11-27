@@ -22,7 +22,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeEpisodeImageProvider> _logger;
-        private readonly ITvMazeClient _tvMazeClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeImageProvider"/> class.
@@ -33,7 +32,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
-            _tvMazeClient = new TvMazeClient();
         }
 
         /// <inheritdoc />
@@ -78,7 +76,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                var tvMazeEpisode = await _tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, episode.ParentIndexNumber.Value, episode.IndexNumber.Value).ConfigureAwait(false);
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var tvMazeEpisode = await tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, episode.ParentIndexNumber.Value, episode.IndexNumber.Value).ConfigureAwait(false);
                 if (tvMazeEpisode == null)
                 {
                     return Enumerable.Empty<RemoteImageInfo>();

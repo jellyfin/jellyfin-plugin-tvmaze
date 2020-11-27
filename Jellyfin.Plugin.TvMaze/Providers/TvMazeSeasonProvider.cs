@@ -19,7 +19,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeSeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>
     {
-        private readonly ITvMazeClient _tvMazeClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeSeasonProvider> _logger;
 
@@ -30,8 +29,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonProvider}"/>.</param>
         public TvMazeSeasonProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeasonProvider> logger)
         {
-            // TODO DI.
-            _tvMazeClient = new TvMazeClient();
             _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
@@ -112,7 +109,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
-            var tvMazeSeasons = await _tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
+            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+            var tvMazeSeasons = await tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
             if (tvMazeSeasons == null)
             {
                 return null;

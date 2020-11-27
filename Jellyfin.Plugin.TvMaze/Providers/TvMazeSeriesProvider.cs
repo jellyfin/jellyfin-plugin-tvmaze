@@ -24,7 +24,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     public class TvMazeSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ITvMazeClient _tvMazeClient;
         private readonly ILogger<TvMazeSeriesProvider> _logger;
         private readonly ILibraryManager _libraryManager;
 
@@ -42,8 +41,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _libraryManager = libraryManager;
-            // TODO DI.
-            _tvMazeClient = new TvMazeClient();
         }
 
         /// <inheritdoc />
@@ -55,7 +52,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 _logger.LogDebug("[GetSearchResults] Starting for {name}", searchInfo.Name);
-                var showSearchResults = (await _tvMazeClient.Search.ShowSearchAsync(searchInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var showSearchResults = (await tvMazeClient.Search.ShowSearchAsync(searchInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
                 _logger.LogDebug("[GetSearchResults] Result count for {name}: {count}", searchInfo.Name, showSearchResults.Count);
                 var searchResults = new List<RemoteSearchResult>();
                 foreach (var show in showSearchResults)
@@ -94,6 +92,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 _logger.LogDebug("[GetMetadata] Starting for {name}", info.Name);
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
                 var result = new MetadataResult<Series>();
 
                 var tvMazeId = TvHelpers.GetTvMazeId(info.ProviderIds);
@@ -101,7 +100,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 if (tvMazeId.HasValue)
                 {
                     // Search by tv maze id.
-                    tvMazeShow = await _tvMazeClient.Shows.GetShowMainInformation(tvMazeId.Value).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Shows.GetShowMainInformation(tvMazeId.Value).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -109,7 +108,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     && !string.IsNullOrEmpty(imdbId))
                 {
                     // Lookup by imdb id.
-                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByImdbId(imdbId).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByImdbId(imdbId).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -118,7 +117,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 {
                     // Lookup by tv rage id.
                     var id = Convert.ToInt32(tvRageId, CultureInfo.InvariantCulture);
-                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -126,7 +125,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     && !string.IsNullOrEmpty(tvdbId))
                 {
                     var id = Convert.ToInt32(tvdbId, CultureInfo.InvariantCulture);
-                    tvMazeShow = await _tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)
@@ -134,7 +133,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     // Series still not found, search by name.
                     var parsedName = _libraryManager.ParseName(info.Name);
                     _logger.LogDebug("[GetMetadata] No TV Maze Id, searching by parsed name: {@name}", parsedName);
-                    tvMazeShow = await GetIdentifyShow(parsedName).ConfigureAwait(false);
+                    tvMazeShow = await GetIdentifyShow(parsedName, tvMazeClient).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)
@@ -189,7 +188,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 SetProviderIds(tvMazeShow, series);
 
                 // Set cast.
-                var castMembers = await _tvMazeClient.Shows.GetShowCastAsync(tvMazeShow.Id).ConfigureAwait(false);
+                var castMembers = await tvMazeClient.Shows.GetShowCastAsync(tvMazeShow.Id).ConfigureAwait(false);
                 foreach (var castMember in castMembers)
                 {
                     var personInfo = new PersonInfo();
@@ -222,9 +221,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
 
-        private async Task<Show?> GetIdentifyShow(ItemLookupInfo lookupInfo)
+        private async Task<Show?> GetIdentifyShow(ItemLookupInfo lookupInfo, TvMazeClient tvMazeClient)
         {
-            var searchResults = (await _tvMazeClient.Search.ShowSearchAsync(lookupInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
+            var searchResults = (await tvMazeClient.Search.ShowSearchAsync(lookupInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
             if (searchResults.Count == 0)
             {
                 // No search results.
