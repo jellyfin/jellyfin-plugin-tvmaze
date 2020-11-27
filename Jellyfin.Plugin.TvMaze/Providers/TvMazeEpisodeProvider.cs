@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -20,19 +21,19 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     public class TvMazeEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
         private readonly ITvMazeClient _tvMazeClient;
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeEpisodeProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeProvider}"/>.</param>
-        public TvMazeEpisodeProvider(IHttpClient httpClient, ILogger<TvMazeEpisodeProvider> logger)
+        public TvMazeEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeEpisodeProvider> logger)
         {
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
 
@@ -104,13 +105,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
+            return await httpClient.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<Episode?> GetMetadataInternal(EpisodeInfo info)

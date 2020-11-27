@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -19,18 +20,18 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeSeasonImageProvider : IRemoteImageProvider
     {
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ITvMazeClient _tvMazeClient;
         private readonly ILogger<TvMazeSeasonImageProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeasonImageProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonImageProvider}"/> interface.</param>
-        public TvMazeSeasonImageProvider(IHttpClient httpClient, ILogger<TvMazeSeasonImageProvider> logger)
+        public TvMazeSeasonImageProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeasonImageProvider> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
@@ -82,13 +83,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
+            return await httpClient.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(IHasProviderIds series, int seasonNumber)

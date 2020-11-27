@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -20,18 +21,18 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeSeriesImageProvider : IRemoteImageProvider
     {
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ITvMazeClient _tvMazeClient;
         private readonly ILogger<TvMazeSeriesImageProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeriesImageProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeriesImageProvider}"/> interface.</param>
-        public TvMazeSeriesImageProvider(IHttpClient httpClient, ILogger<TvMazeSeriesImageProvider> logger)
+        public TvMazeSeriesImageProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeriesImageProvider> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
             _tvMazeClient = new TvMazeClient();
         }
@@ -102,13 +103,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
+            return await httpClient.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
         }
 
         private static ImageType GetImageType(ShowImageType showImageType)

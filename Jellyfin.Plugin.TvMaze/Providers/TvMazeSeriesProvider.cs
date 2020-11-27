@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -22,7 +23,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>
     {
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ITvMazeClient _tvMazeClient;
         private readonly ILogger<TvMazeSeriesProvider> _logger;
         private readonly ILibraryManager _libraryManager;
@@ -30,15 +31,15 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeriesProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{TvMazeSeriesProvider}"/>.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         public TvMazeSeriesProvider(
-            IHttpClient httpClient,
+            IHttpClientFactory httpClientFactory,
             ILogger<TvMazeSeriesProvider> logger,
             ILibraryManager libraryManager)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
             _libraryManager = libraryManager;
             // TODO DI.
@@ -216,13 +217,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
+            return await httpClient.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<Show?> GetIdentifyShow(ItemLookupInfo lookupInfo)
