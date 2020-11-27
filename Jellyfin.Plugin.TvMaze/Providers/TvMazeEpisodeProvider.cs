@@ -20,7 +20,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
-        private readonly ITvMazeClient _tvMazeClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeEpisodeProvider> _logger;
 
@@ -31,8 +30,6 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeProvider}"/>.</param>
         public TvMazeEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeEpisodeProvider> logger)
         {
-            // TODO DI.
-            _tvMazeClient = new TvMazeClient();
             _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
@@ -125,7 +122,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
-            var tvMazeEpisode = await _tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, info.ParentIndexNumber.Value, info.IndexNumber.Value).ConfigureAwait(false);
+            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+            var tvMazeEpisode = await tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, info.ParentIndexNumber.Value, info.IndexNumber.Value).ConfigureAwait(false);
             if (tvMazeEpisode == null)
             {
                 // No episode found.
