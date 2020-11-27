@@ -105,10 +105,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
-            return await httpClient.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
+            return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
 
         private async Task<Episode?> GetMetadataInternal(EpisodeInfo info)
