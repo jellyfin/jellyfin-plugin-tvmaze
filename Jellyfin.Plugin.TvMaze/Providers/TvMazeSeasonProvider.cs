@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -19,19 +20,19 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     public class TvMazeSeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>
     {
         private readonly ITvMazeClient _tvMazeClient;
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeSeasonProvider> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeasonProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonProvider}"/>.</param>
-        public TvMazeSeasonProvider(IHttpClient httpClient, ILogger<TvMazeSeasonProvider> logger)
+        public TvMazeSeasonProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeasonProvider> logger)
         {
             // TODO DI.
             _tvMazeClient = new TvMazeClient();
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
 
@@ -97,13 +98,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
 
         private async Task<Season?> GetSeasonInternal(SeasonInfo info)

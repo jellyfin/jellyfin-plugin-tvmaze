@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
@@ -19,18 +20,18 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeEpisodeImageProvider : IRemoteImageProvider
     {
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeEpisodeImageProvider> _logger;
         private readonly ITvMazeClient _tvMazeClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeImageProvider"/> class.
         /// </summary>
-        /// <param name="httpClient">Instance of the <see cref="IHttpClient"/> interface.</param>
+        /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeImageProvider}"/>.</param>
-        public TvMazeEpisodeImageProvider(IHttpClient httpClient, ILogger<TvMazeEpisodeImageProvider> logger)
+        public TvMazeEpisodeImageProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeEpisodeImageProvider> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
             _tvMazeClient = new TvMazeClient();
         }
@@ -106,13 +107,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         }
 
         /// <inheritdoc />
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
+            return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
     }
 }
