@@ -1,7 +1,7 @@
 ---
 name: "TV Maze"
 guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
-version: "5.0.0.0"
+version: "6.0.0.0"
 targetAbi: "10.7.0.0"
 framework: "net5.0"
 owner: "jellyfin"
@@ -13,4 +13,4 @@ artifacts:
 - "Jellyfin.Plugin.TvMaze.dll"
 - "TvMaze.Api.Client.dll"
 changelog: >
-  Get additional image types
+  Fix lookup by tvdb id
