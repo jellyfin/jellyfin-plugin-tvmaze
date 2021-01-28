@@ -125,7 +125,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     && !string.IsNullOrEmpty(tvdbId))
                 {
                     var id = Convert.ToInt32(tvdbId, CultureInfo.InvariantCulture);
-                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTheTvdbId(id).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)
