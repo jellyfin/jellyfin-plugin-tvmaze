@@ -100,7 +100,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 if (tvMazeId.HasValue)
                 {
                     // Search by TVMaze id.
-                    tvMazeShow = await tvMazeClient.Shows.GetShowMainInformation(tvMazeId.Value).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Shows.GetShowMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
