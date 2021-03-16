@@ -3,7 +3,7 @@
 namespace Jellyfin.Plugin.TvMaze.Configuration
 {
     /// <summary>
-    /// Configuration for TV Maze.
+    /// Configuration for TVMaze.
     /// </summary>
     public class PluginConfiguration : BasePluginConfiguration
     {

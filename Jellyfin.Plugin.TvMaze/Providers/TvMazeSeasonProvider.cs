@@ -15,7 +15,7 @@ using TvMaze.Api.Client;
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
-    /// TV Maze Season provider.
+    /// TVMaze Season provider.
     /// </summary>
     public class TvMazeSeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>
     {
@@ -105,7 +105,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
             if (tvMazeId == null)
             {
-                // Requires series tv maze id.
+                // Requires series TVMaze id.
                 return null;
             }
 

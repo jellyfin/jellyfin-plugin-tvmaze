@@ -19,7 +19,7 @@ using TvMaze.Api.Client.Models;
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
-    /// TV Maze series provider.
+    /// TVMaze series provider.
     /// </summary>
     public class TvMazeSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>
     {
@@ -99,8 +99,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 Show? tvMazeShow = null;
                 if (tvMazeId.HasValue)
                 {
-                    // Search by tv maze id.
-                    tvMazeShow = await tvMazeClient.Shows.GetShowMainInformation(tvMazeId.Value).ConfigureAwait(false);
+                    // Search by TVMaze id.
+                    tvMazeShow = await tvMazeClient.Shows.GetShowMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -132,14 +132,14 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 {
                     // Series still not found, search by name.
                     var parsedName = _libraryManager.ParseName(info.Name);
-                    _logger.LogDebug("[GetMetadata] No TV Maze Id, searching by parsed name: {@name}", parsedName);
+                    _logger.LogDebug("[GetMetadata] No TVMaze Id, searching by parsed name: {@name}", parsedName);
                     tvMazeShow = await GetIdentifyShow(parsedName, tvMazeClient).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)
                 {
-                    // Invalid tv maze id.
-                    _logger.LogDebug("[GetMetadata] No TV Maze result found for {name}", info.Name);
+                    // Invalid TVMaze id.
+                    _logger.LogDebug("[GetMetadata] No TVMaze result found for {name}", info.Name);
                     return result;
                 }
 

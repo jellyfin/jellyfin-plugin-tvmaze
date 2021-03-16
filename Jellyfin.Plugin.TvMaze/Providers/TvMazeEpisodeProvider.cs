@@ -16,7 +16,7 @@ using TvMaze.Api.Client;
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
-    /// TV Maze episode provider.
+    /// TVMaze episode provider.
     /// </summary>
     public class TvMazeEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var tvMazeId = TvHelpers.GetTvMazeId(searchInfo.SeriesProviderIds);
                 if (!tvMazeId.HasValue)
                 {
-                    // Requires a tv maze id.
+                    // Requires a TVMaze id.
                     return results;
                 }
 
@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
             if (!tvMazeId.HasValue)
             {
-                // Requires a tv maze id.
+                // Requires a TVMaze id.
                 return null;
             }
 

@@ -17,7 +17,7 @@ using TvMaze.Api.Client.Models;
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
-    /// TV Maze series image provider.
+    /// TVMaze series image provider.
     /// </summary>
     public class TvMazeSeriesImageProvider : IRemoteImageProvider
     {
@@ -62,8 +62,8 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
                 if (tvMazeId == null)
                 {
-                    // Requires series tv maze id.
-                    _logger.LogWarning("[GetImages] tv maze id is required;");
+                    // Requires series TVMaze id.
+                    _logger.LogWarning("[GetImages] TVMaze id is required;");
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
