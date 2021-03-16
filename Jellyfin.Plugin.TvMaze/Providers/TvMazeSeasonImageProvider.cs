@@ -16,7 +16,7 @@ using TvMaze.Api.Client;
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
-    /// TV Maze season image provider.
+    /// TVMaze season image provider.
     /// </summary>
     public class TvMazeSeasonImageProvider : IRemoteImageProvider
     {
@@ -90,7 +90,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
             if (tvMazeId == null)
             {
-                // Requires series tv maze id.
+                // Requires series TVMaze id.
                 return Enumerable.Empty<RemoteImageInfo>();
             }
 
