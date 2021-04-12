@@ -12,5 +12,8 @@ category: "Metadata"
 artifacts:
 - "Jellyfin.Plugin.TvMaze.dll"
 - "TvMaze.Api.Client.dll"
+- "Flurl.dll"
+- "Flurl.Http.dll"
+- "Polly.dll"
 changelog: >
   Fix lookup by tvdb id

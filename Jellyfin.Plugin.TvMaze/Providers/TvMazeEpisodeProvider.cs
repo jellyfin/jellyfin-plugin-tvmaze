@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -12,6 +12,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
+using TvMaze.Api.Client.Configuration;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
@@ -122,7 +123,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
-            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
             var tvMazeEpisode = await tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, info.ParentIndexNumber.Value, info.IndexNumber.Value).ConfigureAwait(false);
             if (tvMazeEpisode == null)
             {

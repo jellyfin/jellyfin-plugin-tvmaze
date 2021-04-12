@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -14,6 +14,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
+using TvMaze.Api.Client.Configuration;
 using TvMaze.Api.Client.Models;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -52,7 +53,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 _logger.LogDebug("[GetSearchResults] Starting for {name}", searchInfo.Name);
-                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var showSearchResults = (await tvMazeClient.Search.ShowSearchAsync(searchInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
                 _logger.LogDebug("[GetSearchResults] Result count for {name}: {count}", searchInfo.Name, showSearchResults.Count);
                 var searchResults = new List<RemoteSearchResult>();
@@ -92,7 +93,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 _logger.LogDebug("[GetMetadata] Starting for {name}", info.Name);
-                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var result = new MetadataResult<Series>();
 
                 var tvMazeId = TvHelpers.GetTvMazeId(info.ProviderIds);
@@ -108,7 +109,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     && !string.IsNullOrEmpty(imdbId))
                 {
                     // Lookup by imdb id.
-                    tvMazeShow = await tvMazeClient.Lookup.GetShowByImdbId(imdbId).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByImdbIdAsync(imdbId).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -117,7 +118,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 {
                     // Lookup by tv rage id.
                     var id = Convert.ToInt32(tvRageId, CultureInfo.InvariantCulture);
-                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageId(id).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageIdAsync(id).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null
@@ -125,7 +126,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     && !string.IsNullOrEmpty(tvdbId))
                 {
                     var id = Convert.ToInt32(tvdbId, CultureInfo.InvariantCulture);
-                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTheTvdbId(id).ConfigureAwait(false);
+                    tvMazeShow = await tvMazeClient.Lookup.GetShowByTheTvdbIdAsync(id).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)

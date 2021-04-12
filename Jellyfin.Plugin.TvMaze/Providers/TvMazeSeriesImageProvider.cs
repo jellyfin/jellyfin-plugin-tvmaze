@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,6 +12,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
+using TvMaze.Api.Client.Configuration;
 using TvMaze.Api.Client.Models;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
@@ -67,7 +68,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default));
+                var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var images = await tvMazeClient.Shows.GetShowImagesAsync(tvMazeId.Value).ConfigureAwait(false);
                 if (images == null)
                 {
