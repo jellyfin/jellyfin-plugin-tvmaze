@@ -64,21 +64,15 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                var tvMazeId = TvHelpers.GetTvMazeId(episode.Series.ProviderIds);
+                var tvMazeId = TvHelpers.GetTvMazeId(episode.ProviderIds);
                 if (tvMazeId == null)
                 {
-                    // Requires series TVMaze id.
-                    return Enumerable.Empty<RemoteImageInfo>();
-                }
-
-                if (episode.IndexNumber == null || episode.ParentIndexNumber == null)
-                {
-                    // Missing episode or season number.
+                    // Requires episode TVMaze id.
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
-                var tvMazeEpisode = await tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, episode.ParentIndexNumber.Value, episode.IndexNumber.Value).ConfigureAwait(false);
+                var tvMazeEpisode = await tvMazeClient.Episodes.GetEpisodeMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
                 if (tvMazeEpisode == null)
                 {
                     return Enumerable.Empty<RemoteImageInfo>();
