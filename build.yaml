@@ -1,14 +1,14 @@
----
 name: "TVmaze"
 guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-tvmaze.png"
-version: "7.0.0.0"
+version: "8"
 targetAbi: "10.7.0.0"
 framework: "net5.0"
 owner: "jellyfin"
 overview: "Get TV metadata from TVmaze"
 description: >
   Get TV metadata from TVmaze
+
 category: "Metadata"
 artifacts:
   - "Jellyfin.Plugin.TvMaze.dll"
@@ -16,5 +16,11 @@ artifacts:
   - "Flurl.dll"
   - "Flurl.Http.dll"
   - "Polly.dll"
-changelog: |
-  * update api client
+changelog: |-
+  - chore(deps): bump TvMaze.Api.Client from 0.1.71 to 0.1.72 (#21) @dependabot
+
+  ### CI & build changes ###
+  - Update ci (#24) @h1dden-da3m0n
+
+  ### Code or Repo Maintenance ###
+  - chore: plugin images (#22) @h1dden-da3m0n
