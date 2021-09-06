@@ -16,7 +16,8 @@ artifacts:
   - "Flurl.dll"
   - "Flurl.Http.dll"
   - "Polly.dll"
-changelog: |-
+changelog: |2-
+  ### Dependency updates ###
   - chore(deps): bump TvMaze.Api.Client from 0.1.71 to 0.1.72 (#21) @dependabot
 
   ### CI & build changes ###
