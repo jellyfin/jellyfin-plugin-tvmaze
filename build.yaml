@@ -4,7 +4,7 @@ guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-tvmaze.png"
 version: "7.0.0.0"
 targetAbi: "10.7.0.0"
-framework: "net5.0"
+framework: "net6.0"
 owner: "jellyfin"
 overview: "Get TV metadata from TVmaze"
 description: >
