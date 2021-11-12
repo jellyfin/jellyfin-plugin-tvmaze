@@ -52,14 +52,14 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             try
             {
-                _logger.LogDebug("[GetSearchResults] Starting for {name}", searchInfo.Name);
+                _logger.LogDebug("[GetSearchResults] Starting for {Name}", searchInfo.Name);
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var showSearchResults = (await tvMazeClient.Search.ShowSearchAsync(searchInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
-                _logger.LogDebug("[GetSearchResults] Result count for {name}: {count}", searchInfo.Name, showSearchResults.Count);
+                _logger.LogDebug("[GetSearchResults] Result count for {Name}: {Count}", searchInfo.Name, showSearchResults.Count);
                 var searchResults = new List<RemoteSearchResult>();
                 foreach (var show in showSearchResults)
                 {
-                    _logger.LogDebug("[GetSearchResults] Result for {name}: {@show}", searchInfo.Name, show);
+                    _logger.LogDebug("[GetSearchResults] Result for {Name}: {@Show}", searchInfo.Name, show);
                     var searchResult = new RemoteSearchResult
                     {
                         Name = show.Show.Name,
@@ -77,12 +77,12 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     searchResults.Add(searchResult);
                 }
 
-                _logger.LogDebug("[GetSearchResults] Result for {name}: {@series}", searchInfo.Name, searchResults);
+                _logger.LogDebug("[GetSearchResults] Result for {Name}: {@Series}", searchInfo.Name, searchResults);
                 return searchResults;
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, "[GetSearchResults] Error searching for {name}", searchInfo.Name);
+                _logger.LogWarning(e, "[GetSearchResults] Error searching for {Name}", searchInfo.Name);
                 return Enumerable.Empty<RemoteSearchResult>();
             }
         }
@@ -92,7 +92,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             try
             {
-                _logger.LogDebug("[GetMetadata] Starting for {name}", info.Name);
+                _logger.LogDebug("[GetMetadata] Starting for {Name}", info.Name);
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var result = new MetadataResult<Series>();
 
@@ -133,14 +133,14 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 {
                     // Series still not found, search by name.
                     var parsedName = _libraryManager.ParseName(info.Name);
-                    _logger.LogDebug("[GetMetadata] No TVMaze Id, searching by parsed name: {@name}", parsedName);
+                    _logger.LogDebug("[GetMetadata] No TVMaze Id, searching by parsed name: {@Name}", parsedName);
                     tvMazeShow = await GetIdentifyShow(parsedName, tvMazeClient).ConfigureAwait(false);
                 }
 
                 if (tvMazeShow == null)
                 {
                     // Invalid TVMaze id.
-                    _logger.LogDebug("[GetMetadata] No TVMaze result found for {name}", info.Name);
+                    _logger.LogDebug("[GetMetadata] No TVMaze result found for {Name}", info.Name);
                     return result;
                 }
 
@@ -206,7 +206,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 result.Item = series;
                 result.HasMetadata = true;
 
-                _logger.LogDebug("[GetMetadata] Metadata result: {@series}", tvMazeShow);
+                _logger.LogDebug("[GetMetadata] Metadata result: {@Series}", tvMazeShow);
                 return result;
             }
             catch (Exception e)

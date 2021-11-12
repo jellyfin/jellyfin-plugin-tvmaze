@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             try
             {
-                _logger.LogDebug("[GetImages] {name}", item.Name);
+                _logger.LogDebug("[GetImages] {Name}", item.Name);
                 var episode = (Episode)item;
                 var series = episode.Series;
                 if (series == null)
@@ -96,7 +96,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     });
                 }
 
-                _logger.LogInformation("[GetImages] Images found for {name}: {@images}", item.Name, imageResults);
+                _logger.LogInformation("[GetImages] Images found for {Name}: {@Images}", item.Name, imageResults);
                 return imageResults;
             }
             catch (Exception e)

@@ -70,7 +70,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 }
 
                 var imageResults = await GetSeasonImagesInternal(series, season.IndexNumber.Value).ConfigureAwait(false);
-                _logger.LogInformation("[GetImages] Images found for {name}: {@images}", item.Name, imageResults);
+                _logger.LogInformation("[GetImages] Images found for {Name}: {@Images}", item.Name, imageResults);
                 return imageResults;
             }
             catch (Exception e)

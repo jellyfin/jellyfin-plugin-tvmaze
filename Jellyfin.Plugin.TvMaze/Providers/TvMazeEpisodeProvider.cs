@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             try
             {
-                _logger.LogDebug("[GetSearchResults] Starting for {name} {seasonNumber}x{episodeNumber}", searchInfo.Name, searchInfo.ParentIndexNumber, searchInfo.IndexNumber);
+                _logger.LogDebug("[GetSearchResults] Starting for {Name} {SeasonNumber}x{EpisodeNumber}", searchInfo.Name, searchInfo.ParentIndexNumber, searchInfo.IndexNumber);
                 var results = new List<RemoteSearchResult>();
 
                 var tvMazeId = TvHelpers.GetTvMazeId(searchInfo.SeriesProviderIds);
@@ -69,7 +69,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     });
                 }
 
-                _logger.LogDebug("[GetSearchResults] Results for {name}: {@episode}", searchInfo.Name, results);
+                _logger.LogDebug("[GetSearchResults] Results for {Name}: {@Episode}", searchInfo.Name, results);
                 return results;
             }
             catch (Exception e)
@@ -85,7 +85,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var result = new MetadataResult<Episode>();
             try
             {
-                _logger.LogDebug("[GetMetadata] Starting for {name}", info.Name);
+                _logger.LogDebug("[GetMetadata] Starting for {Name}", info.Name);
                 var episode = await GetMetadataInternal(info).ConfigureAwait(false);
                 if (episode != null)
                 {
