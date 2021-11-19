@@ -9,7 +9,7 @@ namespace Jellyfin.Plugin.TvMaze.ExternalIds
     public class TvMazeEpisodeExternalId : IExternalId
     {
         /// <inheritdoc />
-        public string ProviderName => "TVmaze Episode";
+        public string ProviderName => "TVmaze";
 
         /// <inheritdoc />
         public string Key => TvMazePlugin.ProviderId;
