@@ -58,7 +58,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         {
             try
             {
-                _logger.LogDebug("[GetImages] {name}", item.Name);
+                _logger.LogDebug("[GetImages] {Name}", item.Name);
                 var series = (Series)item;
                 var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
                 if (tvMazeId == null)
@@ -72,7 +72,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var images = await tvMazeClient.Shows.GetShowImagesAsync(tvMazeId.Value).ConfigureAwait(false);
                 if (images == null)
                 {
-                    _logger.LogDebug("[GetImages] No images found.");
+                    _logger.LogDebug("[GetImages] No images found");
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
@@ -92,7 +92,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     }
                 }
 
-                _logger.LogInformation("[GetImages] Images found for {name}: {@images}", item.Name, imageResults);
+                _logger.LogInformation("[GetImages] Images found for {Name}: {@Images}", item.Name, imageResults);
                 return imageResults;
             }
             catch (Exception e)
