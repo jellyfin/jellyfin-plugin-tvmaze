@@ -97,7 +97,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, "[GetMetadata]");
+                _logger.LogWarning(e, "[GetMetadata] for {Name}", info.Name);
                 return result;
             }
         }
