@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data.Enums;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -196,7 +197,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     personInfo.SetProviderId(TvMazePlugin.ProviderId, castMember.Person.Id.ToString(CultureInfo.InvariantCulture));
                     personInfo.Name = castMember.Person.Name;
                     personInfo.Role = castMember.Character.Name;
-                    personInfo.Type = PersonType.Actor;
+                    personInfo.Type = PersonKind.Actor;
                     personInfo.ImageUrl = castMember.Person.Image?.Original
                                           ?? castMember.Person.Image?.Medium;
 
