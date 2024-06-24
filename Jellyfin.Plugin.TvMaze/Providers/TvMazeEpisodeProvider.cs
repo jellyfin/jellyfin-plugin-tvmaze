@@ -1,42 +1,67 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 using TvMaze.Api.Client.Configuration;
+using TvMaze.Api.Client.Models;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
+using TvMazeEpisode = TvMaze.Api.Client.Models.Episode;
 
 namespace Jellyfin.Plugin.TvMaze.Providers
 {
     /// <summary>
     /// TVMaze episode provider.
     /// </summary>
-    public class TvMazeEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
+    public partial class TvMazeEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
+        private const string IdPrefix = "tvmazeid-";
+        private const string MemoryCachePrefix = "tvmaze_";
+
+        private static readonly char[] _normalizedEpisodeNamesIgnoredChars = new[] { ' ', '+', '.', '-', '_' };
+        private static readonly TimeSpan _absoluteCacheExpiration = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan _slidingCacheExpiration = TimeSpan.FromMinutes(2);
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeEpisodeProvider> _logger;
+        private readonly IMemoryCache _memoryCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeEpisodeProvider"/> class.
         /// </summary>
         /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{TvMazeEpisodeProvider}"/>.</param>
-        public TvMazeEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeEpisodeProvider> logger)
+        /// <param name="memoryCache">Instance of <see cref="IMemoryCache"/>.</param>
+        public TvMazeEpisodeProvider(
+            IHttpClientFactory httpClientFactory,
+            ILogger<TvMazeEpisodeProvider> logger,
+            IMemoryCache memoryCache)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         /// <inheritdoc />
         public string Name => TvMazePlugin.ProviderName;
+
+        [GeneratedRegex("[0-9]{4}-[0-9]{2}-[0-9]{2}")]
+        private static partial Regex FilenameDateRegex();
+
+        [GeneratedRegex(@$"(?i)\[{IdPrefix}([0-9]+)\]")]
+        private static partial Regex FilenameIdRegex();
 
         /// <inheritdoc />
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo searchInfo, CancellationToken cancellationToken)
@@ -117,26 +142,112 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
-            // The search query must provide an episode number.
-            if (!info.IndexNumber.HasValue || !info.ParentIndexNumber.HasValue)
+            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
+
+            var allEpisodes = (await _memoryCache.GetOrCreateAsync($"{MemoryCachePrefix}_show_{tvMazeId.Value}", async entry =>
             {
-                return null;
+                entry
+                    .SetAbsoluteExpiration(_absoluteCacheExpiration)
+                    .SetSlidingExpiration(_slidingCacheExpiration);
+                return (await tvMazeClient.Shows.GetShowEpisodeListAsync(tvMazeId.Value, true).ConfigureAwait(false)).ToArray();
+            }).ConfigureAwait(false))!;
+
+            var possibleEpisodes = allEpisodes;
+
+            var episode = new Episode();
+            TvMazeEpisode? tvMazeEpisode = null;
+
+            if (info.ParentIndexNumber.HasValue && info.ParentIndexNumber != 0 && info.IndexNumber.HasValue)
+            {
+                tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Season == info.ParentIndexNumber && e.Number == info.IndexNumber);
+
+                if (tvMazeEpisode != null)
+                {
+                    episode.ParentIndexNumber = tvMazeEpisode.Season;
+                    episode.IndexNumber = tvMazeEpisode.Number;
+                }
             }
 
-            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
-            var tvMazeEpisode = await tvMazeClient.Shows.GetEpisodeByNumberAsync(tvMazeId.Value, info.ParentIndexNumber.Value, info.IndexNumber.Value).ConfigureAwait(false);
             if (tvMazeEpisode == null)
             {
-                // No episode found.
+                var filename = Path.GetFileNameWithoutExtension(info.Path);
+
+                var dateMatch = FilenameDateRegex().Match(filename);
+                if (dateMatch.Success)
+                {
+                    possibleEpisodes = possibleEpisodes.Where(e => e.AirDate == dateMatch.Value).ToArray();
+
+                    if (possibleEpisodes.Length == 0)
+                    {
+                        // Get rid of the date filter because there is no episode found
+                        possibleEpisodes = allEpisodes;
+                    }
+                    else if (possibleEpisodes.Length == 1)
+                    {
+                        tvMazeEpisode = possibleEpisodes.First();
+                    }
+                }
+
+                if (tvMazeEpisode == null)
+                {
+                    var idMatch = FilenameIdRegex().Match(filename);
+                    if (idMatch.Success)
+                    {
+                        tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Id.ToString(CultureInfo.InvariantCulture) == idMatch.Groups[1].Value);
+                    }
+
+                    if (tvMazeEpisode == null)
+                    {
+                        var normalizedFileName = NormalizeEpisodeName(filename);
+                        var nameMatchedEpisodes = possibleEpisodes.Where(e => normalizedFileName.Contains(NormalizeEpisodeName(e.Name), StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                        if (nameMatchedEpisodes.Length > 0)
+                        {
+                            possibleEpisodes = nameMatchedEpisodes;
+                        }
+
+                        tvMazeEpisode = possibleEpisodes.FirstOrDefault();
+                        if (possibleEpisodes.Length > 1)
+                        {
+                            var potentialEpisodesString = string.Join(", ", possibleEpisodes.Take(10).Select(ep => $"{ep.Name}(ID: {ep.Id})"));
+                            var fileNameWithIdExample = tvMazeEpisode!.Name + $"[{IdPrefix}{tvMazeEpisode.Id}]" + Path.GetExtension(info.Path);
+                            _logger.LogWarning("[GetMetadata] Found multiple possible episodes in TVMaze for file '{FilePath}': {PossibleEpisodes}. Include the name or the ID of the correct episode in the file name to make the match unique. TVmaze IDs have to be in brackets and prefixed with '{IdPrefix}'. (e.G., '{FileNameWithIdExample}')", info.Path, potentialEpisodesString, IdPrefix, fileNameWithIdExample);
+                            return null;
+                        }
+                    }
+                }
+            }
+
+            if (tvMazeEpisode == null)
+            {
                 return null;
             }
 
-            var episode = new Episode
+            switch (tvMazeEpisode.Type)
             {
-                Name = tvMazeEpisode.Name,
-                IndexNumber = tvMazeEpisode.Number,
-                ParentIndexNumber = tvMazeEpisode.Season
-            };
+                case EpisodeType.Regular:
+                    episode.ParentIndexNumber = tvMazeEpisode.Season;
+                    episode.IndexNumber = tvMazeEpisode.Number;
+                    break;
+                case EpisodeType.SignificantSpecial:
+                case EpisodeType.InsignificantSpecial:
+                    episode.ParentIndexNumber = 0;
+                    // This way of calculating the index number is not perfectly stable because older specials could be added later to the TVmaze database, but we need some index number to allow sorting by.
+                    episode.IndexNumber = allEpisodes
+                        .Where(e => e.Type is EpisodeType.InsignificantSpecial or EpisodeType.SignificantSpecial)
+                        .TakeWhile(e => e.Id != tvMazeEpisode.Id)
+                        .Count();
+                    break;
+                default:
+                    _logger.LogWarning("[GetMetadata] Found unknown episode type '{EpisodeType}'.", tvMazeEpisode.Type);
+                    break;
+            }
+
+            if (tvMazeEpisode.Type == EpisodeType.SignificantSpecial)
+            {
+                SetPositionInSeason(allEpisodes, tvMazeEpisode, episode);
+            }
+
+            episode.Name = tvMazeEpisode.Name;
 
             if (DateTime.TryParse(tvMazeEpisode.AirDate, out var airDate))
             {
@@ -152,6 +263,49 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             episode.SetProviderId(TvMazePlugin.ProviderId, tvMazeEpisode.Id.ToString(CultureInfo.InvariantCulture));
 
             return episode;
+        }
+
+        private static void SetPositionInSeason(IReadOnlyList<TvMazeEpisode> allEpisodes, TvMazeEpisode tvMazeEpisode, Episode episode)
+        {
+            for (int i = 0; i < allEpisodes.Count; i++)
+            {
+                if (allEpisodes[i].Id != tvMazeEpisode.Id)
+                {
+                    continue;
+                }
+
+                if (i == 0 || allEpisodes[i - 1].Season != tvMazeEpisode.Season)
+                {
+                    episode.AirsBeforeSeasonNumber = tvMazeEpisode.Season;
+                }
+                else
+                {
+                    var firstRegularEpisodeAfter = allEpisodes.Skip(i + 1).SkipWhile(e => e.Type != EpisodeType.Regular).FirstOrDefault();
+                    if (firstRegularEpisodeAfter != null && firstRegularEpisodeAfter.Season == tvMazeEpisode.Season)
+                    {
+                        episode.AirsBeforeSeasonNumber = tvMazeEpisode.Season;
+                        episode.AirsBeforeEpisodeNumber = firstRegularEpisodeAfter.Number;
+                    }
+                    else
+                    {
+                        episode.AirsAfterSeasonNumber = tvMazeEpisode.Season;
+                    }
+                }
+
+                return;
+            }
+        }
+
+        private static string NormalizeEpisodeName(string originalName)
+        {
+            var normalizedNameBuilder = new StringBuilder();
+
+            foreach (var character in originalName.Where(character => !_normalizedEpisodeNamesIgnoredChars.Contains(character)))
+            {
+                normalizedNameBuilder.Append(character);
+            }
+
+            return normalizedNameBuilder.ToString();
         }
     }
 }
