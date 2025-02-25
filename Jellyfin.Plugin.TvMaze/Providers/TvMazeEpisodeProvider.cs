@@ -157,9 +157,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var episode = new Episode();
             TvMazeEpisode? tvMazeEpisode = null;
 
-            if (info.ParentIndexNumber.HasValue && info.ParentIndexNumber != 0 && info.IndexNumber.HasValue)
+            var seasonNumber = info.ParentIndexNumber ?? 1;
+            if (seasonNumber != 0 && info.IndexNumber.HasValue)
             {
-                tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Season == info.ParentIndexNumber && e.Number == info.IndexNumber);
+                tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Season == seasonNumber && e.Number == info.IndexNumber);
 
                 if (tvMazeEpisode != null)
                 {
