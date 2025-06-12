@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
