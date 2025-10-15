@@ -18,7 +18,7 @@
         <PackageReference Include="Jellyfin.Data" Version="10.*-*" />
         <PackageReference Include="Jellyfin.Model" Version="10.*-*" />
         <PackageReference Include="TvMaze.Api.Client" Version="0.1.72" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
     </ItemGroup>
 
     <!-- Code Analyzers-->
