@@ -1,7 +1,7 @@
 name: "TVmaze"
 guid: "A4A488D0-17A3-4919-8D82-7F3DE4F6B209"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-tvmaze.png"
-version: 12
+version: 13
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 owner: "jellyfin"
@@ -17,6 +17,4 @@ artifacts:
   - "Flurl.Http.dll"
   - "Polly.dll"
 changelog: |-
-  - Fallback on empty ParentIndexNumber (#54) @Shadowghost
-  - Should provide identifying info in its exception (#47) @michaelkrieger
-  - Add basic handling for specials (#23) @Smith00101010
+  - Jellyfin 10.11 support (#55) @crobibero
