@@ -86,7 +86,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
 
-        private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(IHasProviderIds series, int seasonNumber)
+        private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(Series series, int seasonNumber)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
             if (tvMazeId == null)

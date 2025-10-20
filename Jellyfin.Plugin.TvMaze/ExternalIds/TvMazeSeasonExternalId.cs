@@ -18,9 +18,6 @@ namespace Jellyfin.Plugin.TvMaze.ExternalIds
         public ExternalIdMediaType? Type => ExternalIdMediaType.Season;
 
         /// <inheritdoc />
-        public string UrlFormatString => "http://www.tvmaze.com/seasons/{0}/season";
-
-        /// <inheritdoc />
         public bool Supports(IHasProviderIds item)
         {
             return item is Season;

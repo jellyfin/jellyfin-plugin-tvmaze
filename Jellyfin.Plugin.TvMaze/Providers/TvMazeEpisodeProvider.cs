@@ -266,9 +266,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             return episode;
         }
 
-        private static void SetPositionInSeason(IReadOnlyList<TvMazeEpisode> allEpisodes, TvMazeEpisode tvMazeEpisode, Episode episode)
+        private static void SetPositionInSeason(TvMazeEpisode[] allEpisodes, TvMazeEpisode tvMazeEpisode, Episode episode)
         {
-            for (int i = 0; i < allEpisodes.Count; i++)
+            for (int i = 0; i < allEpisodes.Length; i++)
             {
                 if (allEpisodes[i].Id != tvMazeEpisode.Id)
                 {
