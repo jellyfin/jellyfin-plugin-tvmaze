@@ -1,26 +1,25 @@
-﻿using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 
-namespace Jellyfin.Plugin.TvMaze.ExternalIds
+namespace Jellyfin.Plugin.TvMaze.ExternalIds;
+
+/// <inheritdoc />
+public class TvMazeSeasonExternalId : IExternalId
 {
     /// <inheritdoc />
-    public class TvMazeSeasonExternalId : IExternalId
+    public string ProviderName => "TVmaze";
+
+    /// <inheritdoc />
+    public string Key => TvMazePlugin.ProviderId;
+
+    /// <inheritdoc />
+    public ExternalIdMediaType? Type => ExternalIdMediaType.Season;
+
+    /// <inheritdoc />
+    public bool Supports(IHasProviderIds item)
     {
-        /// <inheritdoc />
-        public string ProviderName => "TVmaze";
-
-        /// <inheritdoc />
-        public string Key => TvMazePlugin.ProviderId;
-
-        /// <inheritdoc />
-        public ExternalIdMediaType? Type => ExternalIdMediaType.Season;
-
-        /// <inheritdoc />
-        public bool Supports(IHasProviderIds item)
-        {
-            return item is Season;
-        }
+        return item is Season;
     }
 }

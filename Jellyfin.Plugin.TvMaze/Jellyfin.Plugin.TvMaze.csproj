@@ -6,7 +6,6 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <Nullable>enable</Nullable>
         <AnalysisMode>AllEnabledByDefault</AnalysisMode>
-        <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,14 +16,14 @@
         <PackageReference Include="Jellyfin.Controller" Version="10.*-*" />
         <PackageReference Include="Jellyfin.Data" Version="10.*-*" />
         <PackageReference Include="Jellyfin.Model" Version="10.*-*" />
-        <PackageReference Include="TvMaze.Api.Client" Version="0.1.72" />
+        <PackageReference Include="TvMaze.Api.Client" Version="0.1.84" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     </ItemGroup>
 
     <!-- Code Analyzers-->
     <ItemGroup>
         <PackageReference Include="SerilogAnalyzer" Version="0.15.0" PrivateAssets="All" />
-        <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+        <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="All" />
         <PackageReference Include="SmartAnalyzers.MultithreadingAnalyzer" Version="1.1.31" PrivateAssets="All" />
     </ItemGroup>
 
