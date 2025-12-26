@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Jellyfin.Plugin.TvMaze.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;

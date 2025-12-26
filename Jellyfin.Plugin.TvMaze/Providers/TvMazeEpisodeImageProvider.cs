@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,28 +57,28 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 _logger.LogDebug("[GetImages] {Name}", item.Name);
                 var episode = (Episode)item;
                 var series = episode.Series;
-                if (series == null)
+                if (series is null)
                 {
                     // Episode or series is null.
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var tvMazeId = TvHelpers.GetTvMazeId(episode.ProviderIds);
-                if (tvMazeId == null)
+                if (tvMazeId is null)
                 {
                     // Requires episode TVMaze id.
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var tvMazeEpisode = await tvMazeClient.Episodes.GetEpisodeMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
-                if (tvMazeEpisode == null)
+                if (tvMazeEpisode is null)
                 {
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var imageResults = new List<RemoteImageInfo>();
-                if (tvMazeEpisode.Image?.Original != null)
+                if (tvMazeEpisode.Image?.Original is not null)
                 {
                     imageResults.Add(new RemoteImageInfo
                     {
@@ -96,7 +95,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             catch (Exception e)
             {
                 _logger.LogWarning(e, "[GetImages]");
-                return Enumerable.Empty<RemoteImageInfo>();
+                return [];
             }
         }
 

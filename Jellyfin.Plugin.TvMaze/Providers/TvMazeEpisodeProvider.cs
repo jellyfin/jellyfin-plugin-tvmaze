@@ -79,7 +79,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 }
 
                 var episode = await GetMetadataInternal(searchInfo).ConfigureAwait(false);
-                if (episode != null)
+                if (episode is not null)
                 {
                     results.Add(new RemoteSearchResult
                     {
@@ -100,7 +100,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             catch (Exception e)
             {
                 _logger.LogWarning(e, "[GetSearchResults]");
-                return Enumerable.Empty<RemoteSearchResult>();
+                return [];
             }
         }
 
@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             {
                 _logger.LogDebug("[GetMetadata] Starting for {Name}", info.Name);
                 var episode = await GetMetadataInternal(info).ConfigureAwait(false);
-                if (episode != null)
+                if (episode is not null)
                 {
                     result.Item = episode;
                     result.HasMetadata = true;
@@ -162,14 +162,14 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             {
                 tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Season == seasonNumber && e.Number == info.IndexNumber);
 
-                if (tvMazeEpisode != null)
+                if (tvMazeEpisode is not null)
                 {
                     episode.ParentIndexNumber = tvMazeEpisode.Season;
                     episode.IndexNumber = tvMazeEpisode.Number;
                 }
             }
 
-            if (tvMazeEpisode == null)
+            if (tvMazeEpisode is null)
             {
                 var filename = Path.GetFileNameWithoutExtension(info.Path);
 
@@ -189,7 +189,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     }
                 }
 
-                if (tvMazeEpisode == null)
+                if (tvMazeEpisode is null)
                 {
                     var idMatch = FilenameIdRegex().Match(filename);
                     if (idMatch.Success)
@@ -197,10 +197,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                         tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Id.ToString(CultureInfo.InvariantCulture) == idMatch.Groups[1].Value);
                     }
 
-                    if (tvMazeEpisode == null)
+                    if (tvMazeEpisode is null)
                     {
                         var normalizedFileName = NormalizeEpisodeName(filename);
-                        var nameMatchedEpisodes = possibleEpisodes.Where(e => normalizedFileName.Contains(NormalizeEpisodeName(e.Name), StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                        var nameMatchedEpisodes = possibleEpisodes.Where(e => e.Name is not null && normalizedFileName.Contains(NormalizeEpisodeName(e.Name), StringComparison.CurrentCultureIgnoreCase)).ToArray();
                         if (nameMatchedEpisodes.Length > 0)
                         {
                             possibleEpisodes = nameMatchedEpisodes;
@@ -218,7 +218,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 }
             }
 
-            if (tvMazeEpisode == null)
+            if (tvMazeEpisode is null)
             {
                 return null;
             }
@@ -282,7 +282,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 else
                 {
                     var firstRegularEpisodeAfter = allEpisodes.Skip(i + 1).SkipWhile(e => e.Type != EpisodeType.Regular).FirstOrDefault();
-                    if (firstRegularEpisodeAfter != null && firstRegularEpisodeAfter.Season == tvMazeEpisode.Season)
+                    if (firstRegularEpisodeAfter is not null && firstRegularEpisodeAfter.Season == tvMazeEpisode.Season)
                     {
                         episode.AirsBeforeSeasonNumber = tvMazeEpisode.Season;
                         episode.AirsBeforeEpisodeNumber = firstRegularEpisodeAfter.Number;

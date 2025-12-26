@@ -58,15 +58,15 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var season = (Season)item;
                 var series = season.Series;
 
-                if (series == null)
+                if (series is null)
                 {
                     // Invalid link.
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 if (!season.IndexNumber.HasValue)
                 {
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var imageResults = await GetSeasonImagesInternal(series, season.IndexNumber.Value).ConfigureAwait(false);
@@ -76,7 +76,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             catch (Exception e)
             {
                 _logger.LogWarning(e, "[GetImages]");
-                return Enumerable.Empty<RemoteImageInfo>();
+                return [];
             }
         }
 
@@ -89,17 +89,17 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(Series series, int seasonNumber)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
-            if (tvMazeId == null)
+            if (tvMazeId is null)
             {
                 // Requires series TVMaze id.
-                return Enumerable.Empty<RemoteImageInfo>();
+                return [];
             }
 
             var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
             var tvMazeSeasons = await tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
-            if (tvMazeSeasons == null)
+            if (tvMazeSeasons is null)
             {
-                return Enumerable.Empty<RemoteImageInfo>();
+                return [];
             }
 
             var imageResults = new List<RemoteImageInfo>();
@@ -107,7 +107,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             {
                 if (tvMazeSeason.Number == seasonNumber)
                 {
-                    if (tvMazeSeason.Image?.Original != null)
+                    if (tvMazeSeason.Image?.Original is not null)
                     {
                         imageResults.Add(new RemoteImageInfo
                         {

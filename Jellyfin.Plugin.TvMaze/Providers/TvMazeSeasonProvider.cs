@@ -44,7 +44,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 var season = await GetSeasonInternal(searchInfo).ConfigureAwait(false);
-                if (season != null)
+                if (season is not null)
                 {
                     results.Add(new RemoteSearchResult
                     {
@@ -80,7 +80,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 }
 
                 var season = await GetSeasonInternal(info).ConfigureAwait(false);
-                if (season != null)
+                if (season is not null)
                 {
                     result.Item = season;
                     result.HasMetadata = true;
@@ -104,7 +104,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         private async Task<Season?> GetSeasonInternal(SeasonInfo info)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
-            if (tvMazeId == null)
+            if (tvMazeId is null)
             {
                 // Requires series TVMaze id.
                 return null;
@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
             var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
             var tvMazeSeasons = await tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
-            if (tvMazeSeasons == null)
+            if (tvMazeSeasons is null)
             {
                 return null;
             }

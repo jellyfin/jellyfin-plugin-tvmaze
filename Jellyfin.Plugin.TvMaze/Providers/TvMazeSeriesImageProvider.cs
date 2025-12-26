@@ -61,26 +61,26 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 _logger.LogDebug("[GetImages] {Name}", item.Name);
                 var series = (Series)item;
                 var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
-                if (tvMazeId == null)
+                if (tvMazeId is null)
                 {
                     // Requires series TVMaze id.
                     _logger.LogWarning("[GetImages] TVMaze id is required;");
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
                 var images = await tvMazeClient.Shows.GetShowImagesAsync(tvMazeId.Value).ConfigureAwait(false);
-                if (images == null)
+                if (images is null)
                 {
                     _logger.LogDebug("[GetImages] No images found");
-                    return Enumerable.Empty<RemoteImageInfo>();
+                    return [];
                 }
 
                 var imageResults = new List<RemoteImageInfo>();
                 // Order by type, then by Main=true
                 foreach (var image in images.OrderBy(o => o.Type).ThenByDescending(o => o.Main))
                 {
-                    if (image.Resolutions.Original != null && image.Type.HasValue)
+                    if (image.Resolutions?.Original is not null && image.Type.HasValue)
                     {
                         imageResults.Add(new RemoteImageInfo
                         {
@@ -98,7 +98,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             catch (Exception e)
             {
                 _logger.LogWarning(e, "[GetImages]");
-                return Enumerable.Empty<RemoteImageInfo>();
+                return [];
             }
         }
 

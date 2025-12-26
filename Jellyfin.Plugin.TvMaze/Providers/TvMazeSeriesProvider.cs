@@ -54,13 +54,24 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             try
             {
                 _logger.LogDebug("[GetSearchResults] Starting for {Name}", searchInfo.Name);
+                var searchName = searchInfo.Name?.Trim();
+                if (string.IsNullOrEmpty(searchName))
+                {
+                    return [];
+                }
+
                 var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
-                var showSearchResults = (await tvMazeClient.Search.ShowSearchAsync(searchInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
+                var showSearchResults = (await tvMazeClient.Search.ShowSearchAsync(searchName).ConfigureAwait(false)).ToList();
                 _logger.LogDebug("[GetSearchResults] Result count for {Name}: {Count}", searchInfo.Name, showSearchResults.Count);
                 var searchResults = new List<RemoteSearchResult>();
                 foreach (var show in showSearchResults)
                 {
                     _logger.LogDebug("[GetSearchResults] Result for {Name}: {@Show}", searchInfo.Name, show);
+                    if (show.Show is null)
+                    {
+                        continue;
+                    }
+
                     var searchResult = new RemoteSearchResult
                     {
                         Name = show.Show.Name,
@@ -68,10 +79,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                         ImageUrl = show.Show.Image?.Original
                     };
 
-                    if (DateTime.TryParse(show.Show.Premiered, out var premiereDate))
+                    if (show.Show.Premiered.HasValue)
                     {
-                        searchResult.PremiereDate = premiereDate;
-                        searchResult.ProductionYear = premiereDate.Year;
+                        searchResult.PremiereDate = show.Show.Premiered.Value;
+                        searchResult.ProductionYear = show.Show.Premiered.Value.Year;
                     }
 
                     SetProviderIds(show.Show, searchResult);
@@ -84,7 +95,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             catch (Exception e)
             {
                 _logger.LogWarning(e, "[GetSearchResults] Error searching for {Name}", searchInfo.Name);
-                return Enumerable.Empty<RemoteSearchResult>();
+                return [];
             }
         }
 
@@ -105,7 +116,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     tvMazeShow = await tvMazeClient.Shows.GetShowMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
                 }
 
-                if (tvMazeShow == null
+                if (tvMazeShow is null
                     && info.ProviderIds.TryGetValue(MetadataProvider.Imdb.ToString(), out var imdbId)
                     && !string.IsNullOrEmpty(imdbId))
                 {
@@ -113,7 +124,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     tvMazeShow = await tvMazeClient.Lookup.GetShowByImdbIdAsync(imdbId).ConfigureAwait(false);
                 }
 
-                if (tvMazeShow == null
+                if (tvMazeShow is null
                     && info.ProviderIds.TryGetValue(MetadataProvider.TvRage.ToString(), out var tvRageId)
                     && !string.IsNullOrEmpty(tvRageId))
                 {
@@ -122,7 +133,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     tvMazeShow = await tvMazeClient.Lookup.GetShowByTvRageIdAsync(id).ConfigureAwait(false);
                 }
 
-                if (tvMazeShow == null
+                if (tvMazeShow is null
                     && info.ProviderIds.TryGetValue(MetadataProvider.Tvdb.ToString(), out var tvdbId)
                     && !string.IsNullOrEmpty(tvdbId))
                 {
@@ -130,7 +141,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     tvMazeShow = await tvMazeClient.Lookup.GetShowByTheTvdbIdAsync(id).ConfigureAwait(false);
                 }
 
-                if (tvMazeShow == null)
+                if (tvMazeShow is null)
                 {
                     // Series still not found, search by name.
                     var parsedName = _libraryManager.ParseName(info.Name);
@@ -138,7 +149,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     tvMazeShow = await GetIdentifyShow(parsedName, tvMazeClient).ConfigureAwait(false);
                 }
 
-                if (tvMazeShow == null)
+                if (tvMazeShow is null)
                 {
                     // Invalid TVMaze id.
                     _logger.LogDebug("[GetMetadata] No TVMaze result found for {Name}", info.Name);
@@ -147,7 +158,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
                 var series = new Series();
                 series.Name = tvMazeShow.Name;
-                series.Genres = tvMazeShow.Genres.ToArray();
+                series.Genres = tvMazeShow.Genres?.ToArray() ?? [];
 
                 if (!string.IsNullOrWhiteSpace(tvMazeShow.Network?.Name))
                 {
@@ -160,13 +171,13 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     series.Studios = new[] { networkName };
                 }
 
-                if (DateTime.TryParse(tvMazeShow.Premiered, out var premiereDate))
+                if (tvMazeShow.Premiered.HasValue)
                 {
-                    series.PremiereDate = premiereDate;
-                    series.ProductionYear = premiereDate.Year;
+                    series.PremiereDate = tvMazeShow.Premiered.Value;
+                    series.ProductionYear = tvMazeShow.Premiered.Value.Year;
                 }
 
-                if (tvMazeShow.Rating?.Average != null)
+                if (tvMazeShow.Rating?.Average is not null)
                 {
                     series.CommunityRating = (float?)tvMazeShow.Rating.Average;
                 }
@@ -193,10 +204,15 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var castMembers = await tvMazeClient.Shows.GetShowCastAsync(tvMazeShow.Id).ConfigureAwait(false);
                 foreach (var castMember in castMembers)
                 {
+                    if (castMember.Person is null)
+                    {
+                        continue;
+                    }
+
                     var personInfo = new PersonInfo();
                     personInfo.SetProviderId(TvMazePlugin.ProviderId, castMember.Person.Id.ToString(CultureInfo.InvariantCulture));
                     personInfo.Name = castMember.Person.Name;
-                    personInfo.Role = castMember.Character.Name;
+                    personInfo.Role = castMember.Character?.Name;
                     personInfo.Type = PersonKind.Actor;
                     personInfo.ImageUrl = castMember.Person.Image?.Original
                                           ?? castMember.Person.Image?.Medium;
@@ -225,7 +241,13 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
         private async Task<Show?> GetIdentifyShow(ItemLookupInfo lookupInfo, TvMazeClient tvMazeClient)
         {
-            var searchResults = (await tvMazeClient.Search.ShowSearchAsync(lookupInfo.Name?.Trim()).ConfigureAwait(false)).ToList();
+            var searchName = lookupInfo.Name?.Trim();
+            if (string.IsNullOrEmpty(searchName))
+            {
+                return null;
+            }
+
+            var searchResults = (await tvMazeClient.Search.ShowSearchAsync(searchName).ConfigureAwait(false)).ToList();
             if (searchResults.Count == 0)
             {
                 // No search results.
@@ -234,8 +256,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
             if (lookupInfo.Year.HasValue)
             {
-                return searchResults.OrderBy(
-                        s => DateTime.TryParse(s.Show.Premiered, out var premiereDate) ? Math.Abs(premiereDate.Year - lookupInfo.Year.Value) : 1)
+                return searchResults
+                    .Where(s => s.Show is not null)
+                    .OrderBy(s => s.Show!.Premiered.HasValue ? Math.Abs(s.Show.Premiered.Value.Year - lookupInfo.Year.Value) : 1)
                     .ThenByDescending(s => s.Score)
                     .FirstOrDefault()?.Show;
             }
@@ -246,6 +269,11 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         private void SetProviderIds(Show show, IHasProviderIds providerIds)
         {
             providerIds.SetProviderId(TvMazePlugin.ProviderId, show.Id.ToString(CultureInfo.InvariantCulture));
+
+            if (show.Externals is null)
+            {
+                return;
+            }
 
             // Set all provider ids.
             if (!string.IsNullOrEmpty(show.Externals.Imdb))
