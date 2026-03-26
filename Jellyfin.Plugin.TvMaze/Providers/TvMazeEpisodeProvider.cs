@@ -135,14 +135,30 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
         private async Task<Episode?> GetMetadataInternal(EpisodeInfo info)
         {
+            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
+
+            var directEpisodeId = TvHelpers.GetTvMazeId(info.ProviderIds);
+            if (directEpisodeId.HasValue)
+            {
+                var directEpisode = await _memoryCache.GetOrCreateAsync($"{MemoryCachePrefix}_episode_{directEpisodeId.Value}", async entry =>
+                {
+                    entry
+                        .SetAbsoluteExpiration(_absoluteCacheExpiration)
+                        .SetSlidingExpiration(_slidingCacheExpiration);
+                    return await tvMazeClient.Episodes.GetEpisodeMainInformationAsync(directEpisodeId.Value).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+                if (directEpisode != null)
+                {
+                    return MapEpisode(directEpisode);
+                }
+            }
+
             var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
             if (!tvMazeId.HasValue)
             {
                 // Requires a TVMaze id.
                 return null;
             }
-
-            var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
 
             var allEpisodes = (await _memoryCache.GetOrCreateAsync($"{MemoryCachePrefix}_show_{tvMazeId.Value}", async entry =>
             {
@@ -263,6 +279,30 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             episode.Overview = TvHelpers.GetStrippedHtml(tvMazeEpisode.Summary);
             episode.SetProviderId(TvMazePlugin.ProviderId, tvMazeEpisode.Id.ToString(CultureInfo.InvariantCulture));
 
+            return episode;
+        }
+
+        private static Episode MapEpisode(TvMazeEpisode tvMazeEpisode)
+        {
+            var episode = new Episode
+            {
+                Name = tvMazeEpisode.Name,
+                ParentIndexNumber = tvMazeEpisode.Season,
+                IndexNumber = tvMazeEpisode.Number,
+                Overview = TvHelpers.GetStrippedHtml(tvMazeEpisode.Summary)
+            };
+
+            if (DateTime.TryParse(tvMazeEpisode.AirDate, out var airDate))
+            {
+                episode.PremiereDate = airDate;
+            }
+
+            if (tvMazeEpisode.Runtime.HasValue)
+            {
+                episode.RunTimeTicks = TimeSpan.FromTicks(tvMazeEpisode.Runtime.Value).Ticks;
+            }
+
+            episode.SetProviderId(TvMazePlugin.ProviderId, tvMazeEpisode.Id.ToString(CultureInfo.InvariantCulture));
             return episode;
         }
 
