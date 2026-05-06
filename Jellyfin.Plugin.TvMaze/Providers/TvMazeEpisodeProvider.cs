@@ -200,7 +200,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     if (tvMazeEpisode == null)
                     {
                         var normalizedFileName = NormalizeEpisodeName(filename);
-                        var nameMatchedEpisodes = possibleEpisodes.Where(e => normalizedFileName.Contains(NormalizeEpisodeName(e.Name), StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                        var nameMatchedEpisodes = possibleEpisodes.Where(e => e.Name != null && normalizedFileName.Contains(NormalizeEpisodeName(e.Name), StringComparison.CurrentCultureIgnoreCase)).ToArray();
                         if (nameMatchedEpisodes.Length > 0)
                         {
                             possibleEpisodes = nameMatchedEpisodes;
