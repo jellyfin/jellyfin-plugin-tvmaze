@@ -73,7 +73,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                         ImageUrl = show.Show.Image?.Original
                     };
 
-                    if (show.Show.Premiered.HasValue)
+                    if (show.Show.Premiered is not null)
                     {
                         var premiereDate = show.Show.Premiered.Value;
                         searchResult.PremiereDate = premiereDate;
@@ -105,7 +105,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
                 var tvMazeId = TvHelpers.GetTvMazeId(info.ProviderIds);
                 Show? tvMazeShow = null;
-                if (tvMazeId.HasValue)
+                if (tvMazeId is not null)
                 {
                     // Search by TVMaze id.
                     tvMazeShow = await tvMazeClient.Shows.GetShowMainInformationAsync(tvMazeId.Value).ConfigureAwait(false);
@@ -166,7 +166,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     series.Studios = new[] { networkName };
                 }
 
-                if (tvMazeShow.Premiered.HasValue)
+                if (tvMazeShow.Premiered is not null)
                 {
                     series.PremiereDate = tvMazeShow.Premiered.Value;
                     series.ProductionYear = tvMazeShow.Premiered.Value.Year;
@@ -177,7 +177,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     series.CommunityRating = (float?)tvMazeShow.Rating.Average;
                 }
 
-                if (tvMazeShow.Runtime.HasValue)
+                if (tvMazeShow.Runtime is not null)
                 {
                     series.RunTimeTicks = TimeSpan.FromMinutes(tvMazeShow.Runtime.Value).Ticks;
                 }
@@ -243,10 +243,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
-            if (lookupInfo.Year.HasValue)
+            if (lookupInfo.Year is not null)
             {
                 return searchResults.OrderBy(
-                        s => s.Show?.Premiered.HasValue == true ? Math.Abs(s.Show.Premiered.Value.Year - lookupInfo.Year.Value) : 1)
+                        s => s.Show?.Premiered is not null ? Math.Abs(s.Show.Premiered.Value.Year - lookupInfo.Year.Value) : 1)
                     .ThenByDescending(s => s.Score)
                     .FirstOrDefault()?.Show;
             }
@@ -264,12 +264,12 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 providerIds.SetProviderId(MetadataProvider.Imdb.ToString(), show.Externals.Imdb);
             }
 
-            if (show.Externals?.TvRage.HasValue == true)
+            if (show.Externals?.TvRage is not null)
             {
                 providerIds.SetProviderId(MetadataProvider.TvRage.ToString(), show.Externals.TvRage.Value.ToString(CultureInfo.InvariantCulture));
             }
 
-            if (show.Externals?.TheTvdb.HasValue == true)
+            if (show.Externals?.TheTvdb is not null)
             {
                 providerIds.SetProviderId(MetadataProvider.Tvdb.ToString(), show.Externals.TheTvdb.Value.ToString(CultureInfo.InvariantCulture));
             }

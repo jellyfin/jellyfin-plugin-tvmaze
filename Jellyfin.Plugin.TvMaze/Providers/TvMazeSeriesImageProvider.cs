@@ -80,7 +80,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 // Order by type, then by Main=true
                 foreach (var image in images.OrderBy(o => o.Type).ThenByDescending(o => o.Main))
                 {
-                    if (image.Resolutions?.Original != null && image.Type.HasValue)
+                    if (image.Resolutions?.Original is not null && image.Type is not null)
                     {
                         imageResults.Add(new RemoteImageInfo
                         {

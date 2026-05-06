@@ -64,7 +64,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                if (!season.IndexNumber.HasValue)
+                if (season.IndexNumber is null)
                 {
                     return Enumerable.Empty<RemoteImageInfo>();
                 }

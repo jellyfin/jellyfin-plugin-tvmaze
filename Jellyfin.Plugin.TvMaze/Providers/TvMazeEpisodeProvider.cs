@@ -72,7 +72,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var results = new List<RemoteSearchResult>();
 
                 var tvMazeId = TvHelpers.GetTvMazeId(searchInfo.SeriesProviderIds);
-                if (!tvMazeId.HasValue)
+                if (tvMazeId is null)
                 {
                     // Requires a TVMaze id.
                     return results;
@@ -136,7 +136,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         private async Task<Episode?> GetMetadataInternal(EpisodeInfo info)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(info.SeriesProviderIds);
-            if (!tvMazeId.HasValue)
+            if (tvMazeId is null)
             {
                 // Requires a TVMaze id.
                 return null;
@@ -158,7 +158,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             TvMazeEpisode? tvMazeEpisode = null;
 
             var seasonNumber = info.ParentIndexNumber ?? 1;
-            if (seasonNumber != 0 && info.IndexNumber.HasValue)
+            if (seasonNumber != 0 && info.IndexNumber is not null)
             {
                 tvMazeEpisode = possibleEpisodes.FirstOrDefault(e => e.Season == seasonNumber && e.Number == info.IndexNumber);
 
@@ -255,7 +255,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 episode.PremiereDate = airDate;
             }
 
-            if (tvMazeEpisode.Runtime.HasValue)
+            if (tvMazeEpisode.Runtime is not null)
             {
                 episode.RunTimeTicks = TimeSpan.FromTicks(tvMazeEpisode.Runtime.Value).Ticks;
             }
