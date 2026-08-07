@@ -89,7 +89,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
         private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(Series series, int seasonNumber)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
-            if (tvMazeId == null)
+            if (!tvMazeId.HasValue)
             {
                 // Requires series TVMaze id.
                 return Enumerable.Empty<RemoteImageInfo>();
@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                         imageResults.Add(new RemoteImageInfo
                         {
                             Url = tvMazeSeason.Image.Original,
-                            ProviderName = TvMazePlugin.ProviderName,
+                            ProviderName = Name,
                             Language = "en",
                             Type = ImageType.Primary
                         });

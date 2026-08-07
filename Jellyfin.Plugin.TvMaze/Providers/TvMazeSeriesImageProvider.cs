@@ -85,7 +85,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                         imageResults.Add(new RemoteImageInfo
                         {
                             Url = image.Resolutions.Original.Url,
-                            ProviderName = TvMazePlugin.ProviderName,
+                            ProviderName = Name,
                             Language = "en",
                             Type = GetImageType(image.Type.Value)
                         });

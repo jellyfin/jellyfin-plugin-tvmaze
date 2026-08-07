@@ -145,9 +145,11 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return result;
                 }
 
-                var series = new Series();
-                series.Name = tvMazeShow.Name;
-                series.Genres = tvMazeShow.Genres.ToArray();
+                var series = new Series
+                {
+                    Name = tvMazeShow.Name,
+                    Genres = tvMazeShow.Genres.ToArray()
+                };
 
                 if (!string.IsNullOrWhiteSpace(tvMazeShow.Network?.Name))
                 {
@@ -193,14 +195,15 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 var castMembers = await tvMazeClient.Shows.GetShowCastAsync(tvMazeShow.Id).ConfigureAwait(false);
                 foreach (var castMember in castMembers)
                 {
-                    var personInfo = new PersonInfo();
+                    var personInfo = new PersonInfo
+                    {
+                        Name = castMember.Person.Name,
+                        Role = castMember.Character.Name,
+                        Type = PersonKind.Actor,
+                        ImageUrl = castMember.Person.Image?.Original
+                                          ?? castMember.Person.Image?.Medium
+                    };
                     personInfo.SetProviderId(TvMazePlugin.ProviderId, castMember.Person.Id.ToString(CultureInfo.InvariantCulture));
-                    personInfo.Name = castMember.Person.Name;
-                    personInfo.Role = castMember.Character.Name;
-                    personInfo.Type = PersonKind.Actor;
-                    personInfo.ImageUrl = castMember.Person.Image?.Original
-                                          ?? castMember.Person.Image?.Medium;
-
                     result.AddPerson(personInfo);
                 }
 
