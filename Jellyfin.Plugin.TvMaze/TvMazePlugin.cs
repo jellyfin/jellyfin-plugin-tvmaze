@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Jellyfin.Plugin.TvMaze.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
@@ -11,15 +11,7 @@ namespace Jellyfin.Plugin.TvMaze
     /// </summary>
     public class TvMazePlugin : BasePlugin<PluginConfiguration>
     {
-        /// <summary>
-        /// Gets the provider name.
-        /// </summary>
-        public const string ProviderName = "TVmaze";
-
-        /// <summary>
-        /// Gets the provider id.
-        /// </summary>
-        public const string ProviderId = "TVmaze";
+        private const string _ProviderName = "TvMaze";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazePlugin"/> class.
@@ -36,6 +28,16 @@ namespace Jellyfin.Plugin.TvMaze
         /// Gets current plugin instance.
         /// </summary>
         public static TvMazePlugin? Instance { get; private set; }
+
+        /// <summary>
+        /// Gets the provider name.
+        /// </summary>
+        public static string ProviderName => _ProviderName;
+
+        /// <summary>
+        /// Gets the provider id.
+        /// </summary>
+        public static string ProviderId => _ProviderName;
 
         /// <inheritdoc />
         public override string Name => ProviderName;

@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
@@ -9,7 +9,7 @@ namespace Jellyfin.Plugin.TvMaze.ExternalIds
     public class TvMazeSeriesExternalId : IExternalId
     {
         /// <inheritdoc />
-        public string ProviderName => "TVmaze";
+        public string ProviderName => TvMazePlugin.ProviderName;
 
         /// <inheritdoc />
         public string Key => TvMazePlugin.ProviderId;
