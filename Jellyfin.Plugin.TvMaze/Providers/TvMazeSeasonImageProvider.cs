@@ -64,12 +64,13 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                if (!season.IndexNumber.HasValue)
+                var directSeasonId = TvHelpers.GetTvMazeId(season.ProviderIds);
+                if (!season.IndexNumber.HasValue && !directSeasonId.HasValue)
                 {
                     return Enumerable.Empty<RemoteImageInfo>();
                 }
 
-                var imageResults = await GetSeasonImagesInternal(series, season.IndexNumber.Value).ConfigureAwait(false);
+                var imageResults = await GetSeasonImagesInternal(series, directSeasonId, season.IndexNumber ?? 0).ConfigureAwait(false);
                 _logger.LogInformation("[GetImages] Images found for {Name}: {@Images}", item.Name, imageResults);
                 return imageResults;
             }
@@ -86,7 +87,7 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             return _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(new Uri(url), cancellationToken);
         }
 
-        private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(Series series, int seasonNumber)
+        private async Task<IEnumerable<RemoteImageInfo>> GetSeasonImagesInternal(Series series, int? directSeasonId, int seasonNumber)
         {
             var tvMazeId = TvHelpers.GetTvMazeId(series.ProviderIds);
             if (tvMazeId == null)
@@ -105,7 +106,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
             var imageResults = new List<RemoteImageInfo>();
             foreach (var tvMazeSeason in tvMazeSeasons)
             {
-                if (tvMazeSeason.Number == seasonNumber)
+                var isMatch = (directSeasonId.HasValue && tvMazeSeason.Id == directSeasonId.Value)
+                    || tvMazeSeason.Number == seasonNumber;
+
+                if (isMatch)
                 {
                     if (tvMazeSeason.Image?.Original != null)
                     {
