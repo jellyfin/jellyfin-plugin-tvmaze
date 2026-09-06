@@ -9,6 +9,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using TvMaze.Api.Client;
 using TvMaze.Api.Client.Configuration;
@@ -20,18 +21,25 @@ namespace Jellyfin.Plugin.TvMaze.Providers
     /// </summary>
     public class TvMazeSeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>
     {
+        private const string MemoryCachePrefix = "tvmaze_";
+        private static readonly TimeSpan _absoluteCacheExpiration = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan _slidingCacheExpiration = TimeSpan.FromMinutes(2);
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TvMazeSeasonProvider> _logger;
+        private readonly IMemoryCache _memoryCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TvMazeSeasonProvider"/> class.
         /// </summary>
         /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
         /// <param name="logger">Instance of the <see cref="ILogger{TvMazeSeasonProvider}"/>.</param>
-        public TvMazeSeasonProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeasonProvider> logger)
+        /// <param name="memoryCache">Instance of <see cref="IMemoryCache"/>.</param>
+        public TvMazeSeasonProvider(IHttpClientFactory httpClientFactory, ILogger<TvMazeSeasonProvider> logger, IMemoryCache memoryCache)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         /// <inheritdoc />
@@ -73,9 +81,9 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
             try
             {
-                if (!info.IndexNumber.HasValue)
+                if (!info.IndexNumber.HasValue && TvHelpers.GetTvMazeId(info.ProviderIds) == null)
                 {
-                    // Requires season number.
+                    // Requires either a season number or a direct TVMaze season ID.
                     return result;
                 }
 
@@ -110,8 +118,16 @@ namespace Jellyfin.Plugin.TvMaze.Providers
                 return null;
             }
 
+            var directSeasonId = TvHelpers.GetTvMazeId(info.ProviderIds);
+
             var tvMazeClient = new TvMazeClient(_httpClientFactory.CreateClient(NamedClient.Default), new RetryRateLimitingStrategy());
-            var tvMazeSeasons = await tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
+            var tvMazeSeasons = await _memoryCache.GetOrCreateAsync($"{MemoryCachePrefix}_show_seasons_{tvMazeId.Value}", async entry =>
+            {
+                entry
+                    .SetAbsoluteExpiration(_absoluteCacheExpiration)
+                    .SetSlidingExpiration(_slidingCacheExpiration);
+                return await tvMazeClient.Shows.GetShowSeasonsAsync(tvMazeId.Value).ConfigureAwait(false);
+            }).ConfigureAwait(false);
             if (tvMazeSeasons == null)
             {
                 return null;
@@ -119,7 +135,10 @@ namespace Jellyfin.Plugin.TvMaze.Providers
 
             foreach (var tvMazeSeason in tvMazeSeasons)
             {
-                if (tvMazeSeason.Number == info.IndexNumber)
+                var isMatch = (directSeasonId.HasValue && tvMazeSeason.Id == directSeasonId.Value)
+                    || tvMazeSeason.Number == info.IndexNumber;
+
+                if (isMatch)
                 {
                     var season = new Season
                     {
